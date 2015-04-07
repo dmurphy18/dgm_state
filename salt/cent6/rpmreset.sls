@@ -48,4 +48,3 @@ create_rpm_macro:
       - cmd: create_rpmbuild_dirs
 
 
-

@@ -1,5 +1,7 @@
 
 include:
   - .mock
+  - .rpmreset
+  - .gitreset
 
 

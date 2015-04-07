@@ -58,12 +58,5 @@ git_checkout_version:
     - require:
       - cmd: add_upstream
 
-git_pull:
-  cmd.run:
-    - name: git pull
-    - cwd: {{ git_ssedir }}
-    - user: {{ bld_user }}
-    - require:
-      - cmd: git_checkout_version
 
 
