@@ -20,5 +20,30 @@ generate_src_rpm:
     - cwd: {{ rpm_blddir }}/SRPMS
     - user: {{ bld_user }}
 
+ensure_mockbuild_exists:
+  file.managed:
+    - name: {{ git_blddir }}/mockbuild
+    - source: salt://tools/mockbuild
+    - user: {{ bld_user }}
+    - group: {{ bld_user }}
+    - mode: 775
 
+build_x86_64_pkg:
+  cmd.run:
+    - name: {{ git_blddir }}/mockbuild -r epel-6-x86_64 -s {{ rpm_blddir }}/SRPMS/salt-enterprise-{{ git_rev }}-1.el6.src.rpm
+    - cwd: {{ rpm_blddir }}/SRPMS
+    - user: {{ bld_user }}
+    - require:
+      - cmd: generate_src_rpm
+      - file: ensure_mockbuild_exists
+
+
+build_i386_pkg:
+  cmd.run:
+    - name: {{ git_blddir }}/mockbuild -r epel-6-i386 -s {{ rpm_blddir }}/SRPMS/salt-enterprise-{{ git_rev }}-1.el6.src.rpm
+    - cwd: {{ rpm_blddir }}/SRPMS
+    - user: {{ bld_user }}
+    - require:
+      - cmd: generate_src_rpm
+      - file: ensure_mockbuild_exists
 

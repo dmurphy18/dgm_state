@@ -36,7 +36,7 @@ clone_sse:
 save_off_user_spec:
   file.copy:
     - name: /home/{{ bld_user }}/salt-sse-el6.spec
-    - source: {{ git_ssedir }}/pkg/rpm/salt-sse-el6.spec
+    - source: {{ git_ssedir }}/pkg/rpm/sse/salt-sse-el6.spec
 
 # in 2015.2 this won't be needed since file.copy will take a user
 ensure_correct_user_spec:
