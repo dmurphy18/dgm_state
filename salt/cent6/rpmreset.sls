@@ -10,6 +10,7 @@
 {% set git_opensource = pillar.get('git_opensource', 'git@github.com:saltstack/salt.git') %}
 {% set git_upstream = pillar.get('git_upstream', 'git@github.com:SS-priv/sse.git') %}
 
+
 ensure_rpm_blddir:
   file.directory:
     - name: {{ rpm_blddir }}
@@ -26,25 +27,21 @@ ensure_rpm_blddir:
 clean_out_rpmbuild:
   cmd.run:
     - name: rm -fR {{ rpm_blddir }}/*
-    - require:
-      - file: ensure_rpm_blddir
 
 create_rpmbuild_dirs:
   cmd.run:
     - name: mkdir -p {{ rpm_blddir }}/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
     - user: {{ bld_user }}
-    - require:
-      - cmd: clean_out_rpmbuild
 
 create_rpm_macro:
   cmd.run:
     - name: |
-        echo "%_topdir /home/{{ bld_user }}" > /home/{{ bld_user }}/.rpmmacros
+        echo "%_topdir {{ rpm_blddir }}" > /home/{{ bld_user }}/.rpmmacros
         echo "%signature gpg" >> /home/{{ bld_user }}/.rpmmacros
         echo "%_gpg_name packaging@saltstack.com" >> /home/{{ bld_user }}/.rpmmacros
     - user: {{ bld_user }}
     - onlyif: test -d /home/{{ bld_user }}
     - require:
+      - file: ensure_rpm_blddir
       - cmd: create_rpmbuild_dirs
-
 
