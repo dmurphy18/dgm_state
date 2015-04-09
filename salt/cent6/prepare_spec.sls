@@ -2,6 +2,7 @@
 {% set rpm_blddir =  pillar.get('bld_user_rpmbuild','/home/saltadmin/rpmbuild') %}
 {% set git_ssedir = pillar.get('bld_user_gitbuild_sse','/home/saltadmin/devcode/sse') %}
 {% set git_rev = pillar.get('git_rev','3.1.5') %}
+{% set git_stest_rev = pillar.get('git_stest_rev','2014.8.5') %}
 
 {% set curr_date = None | strftime("%a %b %d %Y") %}
 
@@ -57,69 +58,43 @@ ensure_correct_user_rpmbuild_spec:
     - cwd: {{ rpm_blddir }}/SPECS
     - user: root
 
-generate_spec_patch:
-  file.append:
-    - name: {{ rpm_blddir }}/SPECS/spec.patch
-    - template: jinja
-    - text: |
-        --- salt-sse.spec 2015-04-03 18:15:23.240483735 -0600
-        +++ salt-sse.spec.new	2015-04-03 16:21:12.884126945 -0600
-        @@ -7,12 +7,12 @@
-         %global include_tests 0
-         
-         %define _salttesting SaltTesting
-        -%define _salttesting_ver 2014.4.24
-        +%define _salttesting_ver 2014.8.5
-         
-         %define srcname salt
-         Name: %{srcname}-enterprise
-        -Version: 3.1.4
-        -Release: 2%{?dist}
-        +Version: {{ git_rev }}
-        +Release: 1%{?dist}
-         Summary: A parallel remote execution system (Enterprise Edition)
-         
-         Group:   System Environment/Daemons
-        @@ -100,6 +100,8 @@
-         cd $RPM_BUILD_DIR/%{name}-%{version}/%{srcname}-%{version}
-         %{__python2} setup.py install -O1 --root $RPM_BUILD_ROOT
-         
-        +find $RPM_BUILD_ROOT -type f -name '*egg*'
-        +
-         mkdir -p $RPM_BUILD_ROOT%{_initrddir}
-         install -p %{SOURCE2} $RPM_BUILD_ROOT%{_initrddir}/
-         install -p %{SOURCE3} $RPM_BUILD_ROOT%{_initrddir}/
-        @@ -190,6 +192,15 @@
-           fi
-         
-         %changelog
-        +* {{ curr_date }} {{ bld_user }} <{{ bld_user }}@saltstack.com> - {{ git_rev }}-1
-        +- Test build {{ git_rev }}
-        +
-        +* Wed Jan 21 2015 Erik Johnson <erik@saltstack.com> - 3.1.5-1
-        +- Security release 3.1.5
-        +
-        +* Fri Aug  1 2014 Erik Johnson <erik@saltstack.com> - 3.1.4.1-1
-        +- Security release 3.1.4.1
-        +
-         * Thu Jul 17 2014 Erik Johnson <erik@saltstack.com> - 3.1.4-2
-         - Add hard dep on python-libcloud for the master
+update_spec_testing:
+  file.replace:
+    - name: {{ rpm_blddir }}/SPECS/salt-sse.spec
+    - pattern: |
+        _salttesting_ver .*
+    - repl: |
+        _salttesting_ver {{ git_stest_rev }}
+    - count: 1
+    - flags:
+      - DOTALL
+      - MULTILINE
+    - bufsize: file
 
-# in 2015.2 this won't be needed since file.copy will take a user
-ensure_correct_user_patch:
-  cmd.run:
-    - name: chown {{ bld_user }}:mock {{ rpm_blddir }}/SPECS/spec.patch
-    - cwd: {{ rpm_blddir }}/SPECS
-    - user: root
+update_spec_version:
+  file.replace:
+    - name: {{ rpm_blddir }}/SPECS/salt-sse.spec
+    - pattern: |
+        ^Version: .*
+    - repl: |
+        Version: {{ git_rev }}
+    - count: 1
+    - flags:
+      - DOTALL
+      - MULTILINE
+    - bufsize: file
 
-apply_spec_patch:
-  cmd.run:
-    - name: patch -N < {{ rpm_blddir }}/SPECS/spec.patch
-    - cwd: {{ rpm_blddir }}/SPECS
-    - user: {{ bld_user }}
-    - template: jinja
-    - require:
-      - file: update_rpmbuild_with_sdist
-      - file: generate_spec_patch
-      - cmd: ensure_correct_user_patch
+update_spec_changelog:
+  file.replace:
+    - name: {{ rpm_blddir }}/SPECS/salt-sse.spec
+    - pattern: |
+        ^%changelog
+    - repl: |
+        %changelog
+        * {{ curr_date }} {{ bld_user }} <{{ bld_user }}@saltstack.com> - {{ git_rev }}-1
+        - Test build for user {{ bld_user }}, test release {{ git_rev }}
+    - count: 1
+    - flags:
+      - MULTILINE
+    - bufsize: file
 
